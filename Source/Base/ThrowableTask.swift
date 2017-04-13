@@ -3,21 +3,21 @@
 //  Pods
 //
 //  Created by Zhixuan Lai on 6/1/16.
-//
+//  Converted to Swift 3 by Tom Kroening 4/11/2017
 //
 
 import Foundation
 
 public enum Result<ReturnType> {
 
-    case Success(ReturnType)
-    case Failure(ErrorType)
+    case success(ReturnType)
+    case failure(Error)
 
     public func extract() throws -> ReturnType {
         switch self {
-        case .Success(let value):
+        case .success(let value):
             return value
-        case .Failure(let error):
+        case .failure(let error):
             throw error
         }
     }
@@ -27,78 +27,78 @@ public enum Result<ReturnType> {
 public protocol ThrowableTaskType {
     associatedtype ReturnType
 
-    func action(completion: Result<ReturnType> -> ())
-    func asyncResult(queue: DispatchQueue, completion: Result<ReturnType> -> ())
-    func awaitResult(queue: DispatchQueue) -> Result<ReturnType>
-    func await(queue: DispatchQueue) throws -> ReturnType
+    func action(_ completion: @escaping  (Result<ReturnType>) -> ())
+    func asyncResult(_ queue: AsyncQueue, completion: @escaping (Result<ReturnType>) -> ())
+    func awaitResult(_ queue: AsyncQueue) -> Result<ReturnType>
+    func await(_ queue: AsyncQueue) throws -> ReturnType
 }
 
 extension ThrowableTaskType {
 
-    public func asyncResult(queue: DispatchQueue = DefaultQueue, completion: (Result<ReturnType> -> ()) = {_ in}) {
-        dispatch_async(queue.get()) {
+    public func asyncResult(_ queue: AsyncQueue = DefaultQueue, completion: @escaping ((Result<ReturnType>) -> ()) = {_ in}) {
+        queue.get().async {
             self.action(completion)
         }
     }
 
-    public func awaitResult(queue: DispatchQueue = DefaultQueue) -> Result<ReturnType> {
-        let timeout = dispatch_time_t(timeInterval: TimeoutForever)
+    public func awaitResult(_ queue: AsyncQueue = DefaultQueue) -> Result<ReturnType> {
+        let timeout = DispatchTime(timeInterval: TimeoutForever)
 
         var value: Result<ReturnType>?
-        let fd_sema = dispatch_semaphore_create(0)
+        let fd_sema = DispatchSemaphore(value: 0)
 
-        dispatch_async(queue.get()) {
+        queue.get().async {
             self.action {result in
                 value = result
-                dispatch_semaphore_signal(fd_sema)
+                fd_sema.signal()
             }
         }
 
-        dispatch_semaphore_wait(fd_sema, timeout)
+        _ = fd_sema.wait(timeout: timeout)
 
         return value!
     }
 
-    public func await(queue: DispatchQueue = DefaultQueue) throws -> ReturnType {
+    public func await(_ queue: AsyncQueue = DefaultQueue) throws -> ReturnType {
         return try awaitResult(queue).extract()
     }
 
 }
 
-public class ThrowableTask<ReturnType> : ThrowableTaskType {
+open class ThrowableTask<ReturnType> : ThrowableTaskType {
 
-    public let action: (Result<ReturnType> -> ()) -> ()
+    open let action: (@escaping ( Result<ReturnType>) -> ()) -> ()
 
-    public func action(completion: Result<ReturnType> -> ()) {
+    open func action(_ completion: @escaping (Result<ReturnType>) -> ()) {
         action(completion)
     }
 
-    public init(action anAction: (Result<ReturnType> -> ()) -> ()) {
+    public init(action anAction: @escaping ( @escaping (Result<ReturnType>) -> ()) -> ()) {
         action = anAction
     }
 
-    public convenience init(action: () -> Result<ReturnType>) {
+    public convenience init(action: @escaping () -> Result<ReturnType>) {
         self.init {callback in callback(action())}
     }
 
-    public convenience init(action: (ReturnType -> ()) throws -> ()) {
-        self.init {(callback: Result<ReturnType> -> ()) in
+    public convenience init(action: @escaping ((ReturnType) -> ()) throws -> ()) {
+        self.init {(callback: (Result<ReturnType>) -> ()) in
             do {
                 try action {result in
-                    callback(Result.Success(result))
+                    callback(Result.success(result))
                 }
             } catch {
-                callback(Result.Failure(error))
+                callback(Result.failure(error))
             }
         }
     }
 
-    public convenience init(action: () throws -> ReturnType) {
-        self.init {(callback: Result<ReturnType> -> ()) in
+    public convenience init(action: @escaping () throws -> ReturnType) {
+        self.init {(callback: (Result<ReturnType>) -> ()) in
             do {
-                callback(Result.Success(try action()))
+                callback(Result.success(try action()))
             } catch {
-                callback(Result.Failure(error))
+                callback(Result.failure(error))
             }
         }
     }

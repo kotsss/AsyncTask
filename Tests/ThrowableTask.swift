@@ -5,20 +5,20 @@ import AsyncTask
 class ThrowableTaskSpec: QuickSpec {
     override func spec() {
         it("should throw") {
-            enum Error: ErrorType {
-                case NotFound
+            enum TestError: Error {
+                case notFound
             }
 
             let load = {(path: String) -> ThrowableTask<NSData> in
                 ThrowableTask {
-                    NSThread.sleepForTimeInterval(0.05)
+                    Thread.sleep(forTimeInterval: 0.05)
                     switch path {
                     case "profile.png":
                         return NSData()
                     case "index.html":
                         return NSData()
                     default:
-                        throw Error.NotFound
+                        throw TestError.notFound
                     }
                 }
             }

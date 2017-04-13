@@ -8,7 +8,7 @@ class TrivialExampleSpec: QuickSpec {
             it("can take optional value") {
                 let load = {(path: String) -> Task<NSData?> in
                     Task {
-                        NSThread.sleepForTimeInterval(0.05)
+                        Thread.sleep(forTimeInterval: 0.05)
                         switch path {
                         case "profile.png":
                             return NSData()
@@ -20,20 +20,20 @@ class TrivialExampleSpec: QuickSpec {
                     }
                 }
 
-                expect(load("profile.png").await()).to(beTruthy())
-                expect(load("index.html").await()).to(beTruthy())
+                expect(load("profile.png").await()).toNot(beNil())
+                expect(load("index.html").await()).toNot(beNil())
                 expect(load("random.txt").await()).to(beNil())
             }
 
             it("can be nested") {
                 let emptyString = Task<String> {
-                    NSThread.sleepForTimeInterval(0.05)
+                    Thread.sleep(forTimeInterval: 0.05)
                     return ""
                 }
 
                 let appendString = {(a: String, b: String) -> Task<String> in
                     Task {
-                        NSThread.sleepForTimeInterval(0.05)
+                        Thread.sleep(forTimeInterval: 0.05)
                         return a + b
                     }
                 }
@@ -74,7 +74,7 @@ class TrivialExampleSpec: QuickSpec {
                 var a = 0
 
                 Task {
-                    NSThread.sleepForTimeInterval(0.05)
+                    Thread.sleep(forTimeInterval: 0.05)
                     expect(a) == 0
                     a = 1
                     expect(a) == 1
@@ -84,14 +84,14 @@ class TrivialExampleSpec: QuickSpec {
                 expect(a).toEventually(equal(1), timeout: 3)
 
                 waitUntil { done in
-                    NSThread.sleepForTimeInterval(0.5)
+                    Thread.sleep(forTimeInterval: 0.5)
                     done()
                 }
             }
 
             it("should return result in callback") {
                 let echo = Task {() -> String in
-                    NSThread.sleepForTimeInterval(0.05)
+                    Thread.sleep(forTimeInterval: 0.05)
                     return "Hello"
                 }
 
@@ -100,7 +100,7 @@ class TrivialExampleSpec: QuickSpec {
                 }
 
                 waitUntil { done in
-                    NSThread.sleepForTimeInterval(0.5)
+                    Thread.sleep(forTimeInterval: 0.5)
                     done()
                 }
             }
@@ -108,13 +108,13 @@ class TrivialExampleSpec: QuickSpec {
             it("can wait synchronously") {
                 var a = 0
 
-                Task { NSThread.sleepForTimeInterval(0.05); expect(a) == 1 }.async()
+                Task { Thread.sleep(forTimeInterval: 0.05); expect(a) == 1 }.async()
                 Task {expect(a) == 0}.await()
 
                 a = 1
 
                 waitUntil { done in
-                    NSThread.sleepForTimeInterval(0.5)
+                    Thread.sleep(forTimeInterval: 0.5)
                     done()
                 }
             }

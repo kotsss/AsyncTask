@@ -9,12 +9,12 @@ class TaskSpec: QuickSpec {
     override func spec() {
         
         it("can warp expensive synchronous API") {
-            func encode(message: String) -> String {
-                NSThread.sleepForTimeInterval(0.1)
+            func encode(_ message: String) -> String {
+                Thread.sleep(forTimeInterval: 0.1)
                 return message
             }
 
-            func encryptMessage(message: String) -> Task<String> {
+            func encryptMessage(_ message: String) -> Task<String> {
                 return Task {
                     encode(message)
                 }
@@ -26,17 +26,19 @@ class TaskSpec: QuickSpec {
         }
 
         it("can wrap asynchronous APIs") {
-            let session = NSURLSession(configuration: .ephemeralSessionConfiguration())
+            let session = URLSession(configuration: .ephemeral)
 
-            let get = {(URL: NSURL) in
-                Task { session.dataTaskWithURL(URL, completionHandler: $0).resume() }
+            let get = {(url: URL) in
+                Task { session.dataTask(with: url, completionHandler: $0).resume() }
             }
 
-            let URL = NSURL(string: "https://httpbin.org/delay/1")!
-            let (data, response, error) = get(URL).await()
-            expect(data).to(beTruthy())
-            expect(response).to(beTruthy())
-            expect(response!.URL!.absoluteString) == "https://httpbin.org/delay/1"
+            let url = URL(string: "https://httpbin.org/delay/1")!
+            let (data, response, error) = get(url).await()
+           
+            expect(data).toNot(beNil())
+            expect(response).toNot(beNil())
+
+            expect(response!.url!.absoluteString) == "https://httpbin.org/delay/1"
             expect(error).to(beNil())
         }
     }

@@ -139,7 +139,7 @@ extension Array {
         }
 
         _ = fd_sema.wait(timeout: DispatchTime(timeInterval: -1))
-        return results.flatMap {$0}
+        return results.compactMap {$0}
     }
 
 }

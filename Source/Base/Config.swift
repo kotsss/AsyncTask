@@ -8,8 +8,8 @@
 
 import Foundation
 
-let DefaultQueue = AsyncQueue.userInitiated
+public let DefaultQueue = AsyncQueue.userInitiated
 
-let TimeoutForever = TimeInterval(-1)
+public let TimeoutForever = TimeInterval(-1)
 
-let DefaultConcurrency = Int.max
+public let DefaultConcurrency = Int.max
